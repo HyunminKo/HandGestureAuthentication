@@ -10,19 +10,17 @@ Mat getHandMask(const Mat& image, int minCr = 128, int maxCr = 170, int minCb = 
 Point getHandCenter(const Mat& mask, double& radius);
 int getFingerCount(const Mat& mask, Point center, double radius, double scale = 1.9);
 
-std::vector<Mat> planes;
+std::vector<Mat>				planes;
 std::vector<std::vector<Point>> contours;
-const cv::String    CASCADE_FILE("haarcascade_frontalface_default.xml");
+const cv::String				CASCADE_FILE("haarcascade_frontalface_default.xml");
 
 int main(int argc, char** argv) {
 
 
 	VideoCapture cap;
 	VideoFaceDetector detector(CASCADE_FILE, cap);
-	int minCr = 128, maxCr = 170, minCb = 73, maxCb = 158;
 	if (!cap.open(0))
 		return 0;
-
 
 	double fps = 0, time_per_frame;
 
@@ -31,8 +29,6 @@ int main(int argc, char** argv) {
 		Mat frame;
 		auto start = cv::getCPUTickCount();
 		detector >> frame;
-
-
 
 		const string& text = "count: ";
 		const string& fpstext = ", fps: ";
@@ -62,6 +58,7 @@ int main(int argc, char** argv) {
 
 
 		std::cout << "손바닥 중심점 좌표:" << center << ", 반지름:" << radius << ", 손가락 수:" << fingerCount << std::endl;
+
 		//손바닥 중심점 그리기
 		circle(frame, center, 2, Scalar(0, 255, 0), -1);
 
