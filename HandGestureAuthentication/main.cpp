@@ -68,9 +68,9 @@ int main(int argc, char** argv) {
 
 		putText(frame, text + std::to_string(fingerCount) + fpstext + std::to_string(time_per_frame), Point(10, 30), CV_FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 0, 255), 1);
 
-		imshow("frame", frame);
 		imshow("mask", mask);
 		imshow("Hand Image", handImage);
+		imshow("frame", frame);
 
 		if (waitKey(30) >= 0) break;
 	}
@@ -88,6 +88,7 @@ Mat getHandMask(const Mat& image, int minCr, int maxCr, int minCb, int maxCb) {
 
 	//각 채널별로 화소마다 비교
 	Mat mask(image.size(), CV_8U, Scalar(0));   //결과 마스크를 저장할 영상
+	uchar* data = (uchar*) mask.data;
 	int nr = image.rows;    //전체 행의 수
 	int nc = image.cols;
 
@@ -96,7 +97,7 @@ Mat getHandMask(const Mat& image, int minCr, int maxCr, int minCb, int maxCb) {
 		uchar* CbPlane = planes[2].ptr<uchar>(i);   //Cb채널의 i번째 행 주소
 		for (int j = 0; j<nc; j++) {
 			if ((minCr < CrPlane[j]) && (CrPlane[j] <maxCr) && (minCb < CbPlane[j]) && (CbPlane[j] < maxCb))
-				mask.at<uchar>(i, j) = 255;
+				data[i * nc + j] = 255;
 		}
 	}
 
