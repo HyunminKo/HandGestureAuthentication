@@ -61,7 +61,7 @@ cv::Rect VideoFaceDetector::face() const
     faceRect.x = (int)(faceRect.x / m_scale);
     faceRect.y = (int)(faceRect.y / m_scale);
     faceRect.width = (int)(faceRect.width / m_scale);
-    faceRect.height = (int)(faceRect.height / m_scale);
+    faceRect.height = (int)(faceRect.height / m_scale)+70;
     return faceRect;
 }
 
