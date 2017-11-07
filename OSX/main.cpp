@@ -1,147 +1,185 @@
-#include "opencv2/opencv.hpp"
 #include "VideoFaceDetector.h"
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include "opencv2/opencv.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #include <string.h>
 
 using namespace cv;
+using namespace std;
 
 Mat getHandMask(const Mat& image, int minCr = 128, int maxCr = 170, int minCb = 73, int maxCb = 158);
 Point getHandCenter(const Mat& mask, double& radius);
 int getFingerCount(const Mat& mask, Point center, double radius, double scale = 1.9);
+Mat getContours(const Mat& mask);
 
-std::vector<Mat>				planes;
-std::vector<std::vector<Point>> contours;
-const cv::String				CASCADE_FILE("haarcascade_frontalface_default.xml");
+vector<Mat>                     planes;
+vector<vector<Point>>           contours;
+vector<Vec4i>                   hierarchy;
+vector<vector<Point>>           hull;
+RNG rng(12345);
+const cv::String                CASCADE_FILE("haarcascade_frontalface_default.xml");
 
 int main(int argc, char** argv) {
-
-
-	VideoCapture cap;
-	VideoFaceDetector detector(CASCADE_FILE, cap);
-	if (!cap.open(0))
-		return 0;
-
-	double fps = 0, time_per_frame;
-
-	for (;;) {
-
-		Mat frame;
-		auto start = cv::getCPUTickCount();
-		detector >> frame;
-
-		const string& text = "count: ";
-		const string& fpstext = ", fps: ";
-
-		if (detector.isFaceFound())
-		{
-			cv::rectangle(frame, detector.face(), cv::Scalar(0, 0, 0), CV_FILLED);
-			//cv::circle(frame, detector.facePosition(), 30, cv::Scalar(0, 255, 0));
-		}
-
-		Mat mask = getHandMask(frame);
-		Mat handImage(frame.size(), CV_8UC3, Scalar(0));
-
-		erode(mask, mask, Mat(3, 3, CV_8U, Scalar(1)), Point(-1, -1), 2);
-		erode(mask, mask, Mat(3, 3, CV_8U, Scalar(1)), Point(-1, -1), 2);
-
-		add(frame, Scalar(0), handImage, mask);
-
-		double radius;
-
-		Point center = getHandCenter(mask, radius);
-		int fingerCount = getFingerCount(mask, center, radius);
-
-		auto end = cv::getCPUTickCount();
-		time_per_frame = (end - start) / cv::getTickFrequency();
-		fps = (15 * fps + (1 / time_per_frame)) / 16;
-
-
-		std::cout << "¼Õ¹Ù´Ú Áß½ÉÁ¡ ÁÂÇ¥:" << center << ", ¹İÁö¸§:" << radius << ", ¼Õ°¡¶ô ¼ö:" << fingerCount << std::endl;
-
-		//¼Õ¹Ù´Ú Áß½ÉÁ¡ ±×¸®±â
-		circle(frame, center, 2, Scalar(0, 255, 0), -1);
-
-		//¼Õ¹Ù´Ú ¿µ¿ª ±×¸®±â
-		circle(frame, center, (int)(radius * 1.9), Scalar(255, 0, 0), 2);
-
-
-		putText(frame, text + std::to_string(fingerCount) + fpstext + std::to_string(time_per_frame), Point(10, 30), CV_FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 0, 255), 1);
-
-		imshow("mask", mask);
-		imshow("Hand Image", handImage);
-		imshow("frame", frame);
-
-		if (waitKey(30) >= 0) break;
-	}
-
-	return 0;
+    
+    
+    VideoCapture cap;
+    VideoFaceDetector detector(CASCADE_FILE, cap);
+    if (!cap.open(0))
+        return 0;
+    cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+    
+    double fps = 0, time_per_frame;
+    
+    for (;;) {
+        
+        Mat frame;
+        Mat originalFrame;
+        auto start = cv::getCPUTickCount();
+        detector >> frame;
+        detector >> originalFrame;
+        
+        const string& text = "count: ";
+        const string& fpstext = ", fps: ";
+        
+        if (detector.isFaceFound())
+        {
+            cv::rectangle(frame, detector.face(), cv::Scalar(0, 0, 0), CV_FILLED);
+            //cv::circle(frame, detector.facePosition(), 30, cv::Scalar(0, 255, 0));
+        }
+        
+        Mat mask = getHandMask(frame);
+        Mat handImage(frame.size(), CV_8UC3, Scalar(0));
+        
+        erode(mask, mask, Mat(3, 3, CV_8U, Scalar(1)), Point(-1, -1), 2);
+        erode(mask, mask, Mat(3, 3, CV_8U, Scalar(1)), Point(-1, -1), 2);
+        
+        add(frame, Scalar(0), handImage, mask);
+        
+        double radius;
+        
+        Point center = getHandCenter(mask, radius);
+        int fingerCount = getFingerCount(mask, center, radius);
+        mask = getContours(mask);
+        
+        
+        /* ì›ë³¸í”„ë ˆì„ì— ì •ë³´ í‘œì‹œ */
+        auto end = cv::getCPUTickCount();
+        time_per_frame = (end - start) / cv::getTickFrequency();
+        fps = (15 * fps + (1 / time_per_frame)) / 16;
+        
+        std::cout << "ì†ë°”ë‹¥ ì¤‘ì‹¬ì  ì¢Œí‘œ:" << center << ", ë°˜ì§€ë¦„:" << radius << ", ì†ê°€ë½ ìˆ˜:" << fingerCount << std::endl;
+        
+        //ì†ë°”ë‹¥ ì¤‘ì‹¬ì  ê·¸ë¦¬ê¸°
+        circle(originalFrame, center, 2, Scalar(0, 255, 0), -1);
+        
+        //ì†ë°”ë‹¥ ì˜ì—­ ê·¸ë¦¬ê¸°
+        circle(originalFrame, center, (int)(radius * 1.9), Scalar(255, 0, 0), 2);
+        
+        
+        putText(originalFrame, text + std::to_string(fingerCount) + fpstext + std::to_string(time_per_frame), Point(10, 30), CV_FONT_HERSHEY_PLAIN, 2, cv::Scalar(0, 0, 255), 1);
+        
+        imshow("mask", mask);
+        imshow("Hand Image", handImage);
+        imshow("Final frame", originalFrame);
+        
+        if (waitKey(30) >= 0) break;
+    }
+    
+    return 0;
 }
 
 Mat getHandMask(const Mat& image, int minCr, int maxCr, int minCb, int maxCb) {
-	//ÄÃ·¯ °ø°£ º¯È¯ BGR->YCrCb
-	Mat YCrCb;
-	cvtColor(image, YCrCb, CV_BGR2YCrCb);
-
-	//°¢ Ã¤³Îº°·Î ºĞ¸®
-	split(YCrCb, planes);
-
-	//°¢ Ã¤³Îº°·Î È­¼Ò¸¶´Ù ºñ±³
-	Mat mask(image.size(), CV_8U, Scalar(0));   //°á°ú ¸¶½ºÅ©¸¦ ÀúÀåÇÒ ¿µ»ó
-	uchar* data = (uchar*) mask.data;
-	int nr = image.rows;    //ÀüÃ¼ ÇàÀÇ ¼ö
-	int nc = image.cols;
-
-	for (int i = 0; i<nr; i++) {
-		uchar* CrPlane = planes[1].ptr<uchar>(i);   //CrÃ¤³ÎÀÇ i¹øÂ° Çà ÁÖ¼Ò
-		uchar* CbPlane = planes[2].ptr<uchar>(i);   //CbÃ¤³ÎÀÇ i¹øÂ° Çà ÁÖ¼Ò
-		for (int j = 0; j<nc; j++) {
-			if ((minCr < CrPlane[j]) && (CrPlane[j] <maxCr) && (minCb < CbPlane[j]) && (CbPlane[j] < maxCb))
-				data[i * nc + j] = 255;
-		}
-	}
-
-	return mask;
+    //ì»¬ëŸ¬ ê³µê°„ ë³€í™˜ BGR->YCrCb
+    Mat YCrCb;
+    
+    cvtColor(image, YCrCb, CV_BGR2YCrCb);
+    
+    //ê° ì±„ë„ë³„ë¡œ ë¶„ë¦¬
+    split(YCrCb, planes);
+    
+    //ê° ì±„ë„ë³„ë¡œ í™”ì†Œë§ˆë‹¤ ë¹„êµ
+    Mat mask(image.size(), CV_8U, Scalar(0));   //ê²°ê³¼ ë§ˆìŠ¤í¬ë¥¼ ì €ì¥í•  ì˜ìƒ
+    uchar* data = (uchar*) mask.data;
+    int nr = image.rows;    //ì „ì²´ í–‰ì˜ ìˆ˜
+    int nc = image.cols;
+    
+    for (int i = 0; i<nr; i++) {
+        uchar* CrPlane = planes[1].ptr<uchar>(i);   //Crì±„ë„ì˜ ië²ˆì§¸ í–‰ ì£¼ì†Œ
+        uchar* CbPlane = planes[2].ptr<uchar>(i);   //Cbì±„ë„ì˜ ië²ˆì§¸ í–‰ ì£¼ì†Œ
+        for (int j = 0; j<nc; j++) {
+            if ((minCr < CrPlane[j]) && (CrPlane[j] <maxCr) && (minCb < CbPlane[j]) && (CbPlane[j] < maxCb))
+                data[i * nc + j] = 255;
+        }
+    }
+    
+    return mask;
 }
 
-//¼Õ¹Ù´ÚÀÇ Áß½ÉÁ¡°ú ¹İÁö¸§ ¹İÈ¯
-//ÀÔ·ÂÀº 8bit ´ÜÀÏ Ã¤³Î(CV_8U), ¹İÁö¸§À» ÀúÀåÇÒ doubleÇü º¯¼ö
+//ì†ë°”ë‹¥ì˜ ì¤‘ì‹¬ì ê³¼ ë°˜ì§€ë¦„ ë°˜í™˜
+//ì…ë ¥ì€ 8bit ë‹¨ì¼ ì±„ë„(CV_8U), ë°˜ì§€ë¦„ì„ ì €ì¥í•  doubleí˜• ë³€ìˆ˜
 Point getHandCenter(const Mat& mask, double& radius) {
-	//°Å¸® º¯È¯ Çà·ÄÀ» ÀúÀåÇÒ º¯¼ö
-	Mat dst;
-	distanceTransform(mask, dst, CV_DIST_L2, 5);  //°á°ú´Â CV_32SC1 Å¸ÀÔ
-
-												  //°Å¸® º¯È¯ Çà·Ä¿¡¼­ °ª(°Å¸®)ÀÌ °¡Àå Å« ÇÈ¼¿ÀÇ ÁÂÇ¥¿Í, °ªÀ» ¾ò¾î¿Â´Ù.
-	int maxIdx[2];    //ÁÂÇ¥ °ªÀ» ¾ò¾î¿Ã ¹è¿­(Çà, ¿­ ¼øÀ¸·Î ÀúÀåµÊ)
-	minMaxIdx(dst, NULL, &radius, NULL, maxIdx, mask);   //ÃÖ¼Ò°ªÀº »ç¿ë X
-
-	return Point(maxIdx[1], maxIdx[0]);
+    //ê±°ë¦¬ ë³€í™˜ í–‰ë ¬ì„ ì €ì¥í•  ë³€ìˆ˜
+    Mat dst;
+    distanceTransform(mask, dst, CV_DIST_L2, 5);  //ê²°ê³¼ëŠ” CV_32SC1 íƒ€ì…
+    
+    //ê±°ë¦¬ ë³€í™˜ í–‰ë ¬ì—ì„œ ê°’(ê±°ë¦¬)ì´ ê°€ì¥ í° í”½ì…€ì˜ ì¢Œí‘œì™€, ê°’ì„ ì–»ì–´ì˜¨ë‹¤.
+    int maxIdx[2];    //ì¢Œí‘œ ê°’ì„ ì–»ì–´ì˜¬ ë°°ì—´(í–‰, ì—´ ìˆœìœ¼ë¡œ ì €ì¥ë¨)
+    minMaxIdx(dst, NULL, &radius, NULL, maxIdx, mask);   //ìµœì†Œê°’ì€ ì‚¬ìš© X
+    
+    return Point(maxIdx[1], maxIdx[0]);
 }
 
-//¼Õ¸ñÀ» Á¦°ÅÇÏÁö ¾ÊÀº »óÅÂ¿¡¼­ ¼Õ°¡¶ô °³¼ö ¼¼±â
+//ì†ëª©ì„ ì œê±°í•˜ì§€ ì•Šì€ ìƒíƒœì—ì„œ ì†ê°€ë½ ê°œìˆ˜ ì„¸ê¸°
 int getFingerCount(const Mat& mask, Point center, double radius, double scale) {
-	//¼Õ°¡¶ô °³¼ö¸¦ ¼¼±â À§ÇÑ ¿ø ±×¸®±â
-	Mat cImg(mask.size(), CV_8U, Scalar(0));
-	circle(cImg, center, radius*scale, Scalar(255));
-
-	//¿øÀÇ ¿Ü°û¼±À» ÀúÀåÇÒ º¤ÅÍ
-
-	findContours(cImg, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-
-	if (contours.size() == 0)   //¿Ü°û¼±ÀÌ ¾øÀ» ¶§ == ¼Õ °ËÃâ X
-		return -1;
-
-	//¿Ü°û¼±À» µû¶ó µ¹¸ç maskÀÇ °ªÀÌ 0¿¡¼­ 1·Î ¹Ù²î´Â ÁöÁ¡ È®ÀÎ
-	int fingerCount = 0;
-	for (int i = 1; i<contours[0].size(); i++) {
-		Point p1 = contours[0][i - 1];
-		Point p2 = contours[0][i];
-		if (mask.at<uchar>(p1.y, p1.x) == 0 && mask.at<uchar>(p2.y, p2.x)>1)
-			fingerCount++;
-	}
-	if (fingerCount > 6)
-		return -1;
-
-	//¼Õ¸ñ°ú ¸¸³ª´Â °³¼ö 1°³ Á¦¿Ü
-	return fingerCount - 1;
+    //ì†ê°€ë½ ê°œìˆ˜ë¥¼ ì„¸ê¸° ìœ„í•œ ì› ê·¸ë¦¬ê¸°
+    
+    
+    Mat cImg(mask.size(), CV_8U, Scalar(0));
+    circle(cImg, center, radius*scale, Scalar(255));
+    
+    //ì›ì˜ ì™¸ê³½ì„ ì„ ì €ì¥í•  ë²¡í„°
+    
+    
+    findContours(cImg, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    
+    if (contours.size() == 0)   //ì™¸ê³½ì„ ì´ ì—†ì„ ë•Œ == ì† ê²€ì¶œ X
+        return -1;
+    
+    //ì™¸ê³½ì„ ì„ ë”°ë¼ ëŒë©° maskì˜ ê°’ì´ 0ì—ì„œ 1ë¡œ ë°”ë€ŒëŠ” ì§€ì  í™•ì¸
+    int fingerCount = 0;
+    for (int i = 1; i<contours[0].size(); i++) {
+        Point p1 = contours[0][i - 1];
+        Point p2 = contours[0][i];
+        if (mask.at<uchar>(p1.y, p1.x) == 0 && mask.at<uchar>(p2.y, p2.x)>1)
+            fingerCount++;
+    }
+    
+    
+    if (fingerCount > 6)
+        return -1;
+    
+    //ì†ëª©ê³¼ ë§Œë‚˜ëŠ” ê°œìˆ˜ 1ê°œ ì œì™¸
+    return fingerCount - 1;
 }
+
+Mat getContours(const Mat& mask) {
+    findContours(mask, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+    hull.resize(contours.size());
+    for (int i = 0; i < contours.size(); i++)
+    {
+        convexHull(Mat(contours[i]), hull[i], false);
+    }
+    
+    /// Draw contours, hull results
+    Mat drawing = Mat::zeros(mask.size(), CV_8UC3);
+    for (int i = 0; i< contours.size(); i++)
+    {
+        Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+        drawContours(drawing, contours, i, color, 1, 8, vector<Vec4i>(), 0, Point());
+        drawContours(drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point());
+    }
+    
+    return drawing;
+}
+
