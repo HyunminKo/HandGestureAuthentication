@@ -6,13 +6,15 @@ def on_mouse(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         print("x,y: ",x,y)
 
-img_path = './DataSample/pos/'
-gt_path = './DataSample/posGt/'
-img_fileNames = os.listdir('./DataSample/pos/')
-gt_fileNames = os.listdir('./DataSample/posGt/')
+img_path = '../DataSample/pos/'
+gt_path = '../DataSample/posGt/'
+img_fileNames = os.listdir('../DataSample/pos/')
+gt_fileNames = os.listdir('../DataSample/posGt/')
 img_fileNames.sort()
 gt_fileNames.sort()
 
+img_fileNames.remove('.ipynb_checkpoints')
+gt_fileNames.remove('.ipynb_checkpoints')
 cv2.namedWindow('image')
 cv2.setMouseCallback('image', on_mouse)
 
