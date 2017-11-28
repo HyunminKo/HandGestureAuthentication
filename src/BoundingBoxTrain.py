@@ -2,6 +2,7 @@ import os
 import tensorflow as tf
 from tensorflow.core.protobuf import saver_pb2
 import VIVA
+import BoundingBoxModel
 
 LOGDIR = './save'
 
@@ -12,7 +13,7 @@ batch_size = 30
 sess = tf.InteractiveSession()
 
 train_vars = tf.trainable_variables()
-loss = tf.reduce_mean(tf.square(tf.subtract(model.y_, model.y))) + tf.add_n([tf.nn.l2_loss(v) for v in train_vars]) * L2NormConst
+loss = tf.reduce_mean(tf.square(tf.subtract(BoundingBoxModel.y_, BoundingBoxModel.y))) + tf.add_n([tf.nn.l2_loss(v) for v in train_vars]) * L2NormConst
 train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 sess.run(tf.global_variables_initializer())
 
@@ -31,14 +32,14 @@ summary_writer = tf.summary.FileWriter(logs_path, graph=tf.get_default_graph())
 for epoch in range(epochs):
     for i in range(int(VIVA.num_images/batch_size)):
         xs, ys = driving_data.LoadTrainBatch(batch_size)
-        train_step.run(feed_dict={model.x: xs, model.y_: ys, model.keep_prob: 0.8})
+        train_step.run(feed_dict={BoundingBoxModel.x: xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 0.8})
         if i % 10 == 0:
             xs, ys = driving_data.LoadValBatch(batch_size)
-            loss_value = loss.eval(feed_dict={model.x:xs, model.y_: ys, model.keep_prob: 1.0})
+            loss_value = loss.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
             print("Epoch: %d, Step: %d, Loss: %g" % (epoch, epoch * batch_size + i, loss_value))
 
         # write logs at every iteration
-        summary = merged_summary_op.eval(feed_dict={model.x:xs, model.y_: ys, model.keep_prob: 1.0})
+        summary = merged_summary_op.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
         summary_writer.add_summary(summary, epoch * driving_data.num_images/batch_size + i)
 
         if i % batch_size == 0:
