@@ -31,16 +31,16 @@ summary_writer = tf.summary.FileWriter(logs_path, graph=tf.get_default_graph())
 # train over the dataset about 30 times
 for epoch in range(epochs):
     for i in range(int(VIVA.num_images/batch_size)):
-        xs, ys = driving_data.LoadTrainBatch(batch_size)
+        xs, ys = VIVA.LoadTrainBatch(batch_size)
         train_step.run(feed_dict={BoundingBoxModel.x: xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 0.8})
         if i % 10 == 0:
-            xs, ys = driving_data.LoadValBatch(batch_size)
+            xs, ys = VIVA.LoadValBatch(batch_size)
             loss_value = loss.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
             print("Epoch: %d, Step: %d, Loss: %g" % (epoch, epoch * batch_size + i, loss_value))
 
         # write logs at every iteration
         summary = merged_summary_op.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
-        summary_writer.add_summary(summary, epoch * driving_data.num_images/batch_size + i)
+        summary_writer.add_summary(summary, epoch * VIVA.num_images/batch_size + i)
 
         if i % batch_size == 0:
             if not os.path.exists(LOGDIR):
