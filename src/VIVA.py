@@ -11,7 +11,7 @@ val_batch_pointer = 0
 #read data.txt
 with open("train/train_data.txt") as f:
     for line in f:
-        xs.append("train/pos" + line.split()[0])
+        xs.append("train/pos/" + line.split()[0])
         with open("train/posGt/"+line.split()[0][:-3]+"txt") as gf:
             lines=[]
             while True:
