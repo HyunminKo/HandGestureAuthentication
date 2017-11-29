@@ -15,7 +15,7 @@ def conv2d(x, W, stride):
 def maxPool2d(x,stride):
     return tf.nn.max_pool(x, strides=[1,stride,stride,1],ksize=[1,3,3,1],padding='VALID')
 
-x = tf.placeholder(tf.float32, shape=[None, 176, 100, 3])
+x = tf.placeholder(tf.float32, shape=[None, 100, 176, 3])
 y_ = tf.placeholder(tf.float32, shape=[None, 4])
 
 x_image = x
