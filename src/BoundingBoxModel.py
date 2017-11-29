@@ -40,19 +40,18 @@ b_conv3 = bias_variable([48])
 h_conv3 = tf.nn.relu(conv2d(h_conv2, W_conv3, 2) + b_conv3)
 p_conv3 = maxPool2d(h_conv3,2)
 
-
 #FCL 1
-W_fc1 = weight_variable([1152, 1164])
-b_fc1 = bias_variable([1164])
+W_fc1 = weight_variable([144, 288])
+b_fc1 = bias_variable([288])
 
-p_conv3_flat = tf.reshape(p_conv3, [-1, 1152])
+p_conv3_flat = tf.reshape(p_conv3, [-1, 144])
 h_fc1 = tf.nn.relu(tf.matmul(p_conv3_flat, W_fc1) + b_fc1)
 
 keep_prob = tf.placeholder(tf.float32)
 h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
 #FCL 2
-W_fc2 = weight_variable([1164, 100])
+W_fc2 = weight_variable([288, 100])
 b_fc2 = bias_variable([100])
 
 h_fc2 = tf.nn.relu(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
@@ -65,5 +64,4 @@ b_fc3 = bias_variable([4])
 
 #Output
 y = tf.matmul(h_fc2_drop, W_fc3) + b_fc3
-
 
