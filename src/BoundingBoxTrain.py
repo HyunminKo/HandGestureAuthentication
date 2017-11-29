@@ -6,8 +6,8 @@ import BoundingBoxModel
 LOGDIR = './save'
 
 L2NormConst = 0.001
-epochs = 20
-batch_size = 30
+epochs = 30
+batch_size = 15
 
 sess = tf.InteractiveSession()
 
@@ -32,6 +32,8 @@ for epoch in range(epochs):
     for i in range(int(VIVA.num_images/batch_size)):
         xs, ys = VIVA.LoadTrainBatch(batch_size)
         train_step.run(feed_dict={BoundingBoxModel.x: xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 0.8})
+        loss_value = loss.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
+        print("Train_Loss: %g" % (loss_value))
         if i % 10 == 0:
             xs, ys = VIVA.LoadValBatch(batch_size)
             loss_value = loss.eval(feed_dict={BoundingBoxModel.x:xs, BoundingBoxModel.y_: ys, BoundingBoxModel.keep_prob: 1.0})
