@@ -1,5 +1,6 @@
 import scipy.misc
 import random
+import os
 
 xs = []
 ys = []
@@ -27,12 +28,19 @@ with open("train/train_data.txt") as f:
                     areaVal = float(line_arr[3])*float(line_arr[4])
                     maxIndex = l
             line_arr = lines[maxIndex].split(' ')
-            line_arr[1] = round(float(line_arr[1])/3.6363,1)
-            line_arr[2] = round(float(line_arr[2])/4.8,1)
-            line_arr[3] = round(float(line_arr[3])/3.6363,1)
-            line_arr[4] = round(float(line_arr[4])/4.8,1)
+            line_arr[1] = float(line_arr[1])/3.6363
+            line_arr[2] = float(line_arr[2])/4.8
+            line_arr[3] = float(line_arr[3])/3.6363
+            line_arr[4] = float(line_arr[4])/4.8
             ys.append([line_arr[1],line_arr[2],line_arr[3],line_arr[4]])
-
+#read data.txt
+with open("train/train_data2.txt") as f:
+    for line in f:
+        dirPath = os.path.join("train/pos/" + line[:-1])
+        files = os.listdir(dirPath)
+        for file in files:
+            xs.append(dirPath+"/"+file)
+            ys.append([-1,-1,-1,-1])
 #get number of images
 num_images = len(xs)
 

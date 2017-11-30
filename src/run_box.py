@@ -19,7 +19,7 @@ for i in range(len(xs)):
     image = scipy.misc.imresize(full_image, [100, 176])
     location = BoundingBoxModel.y.eval(feed_dict={BoundingBoxModel.x: [image], BoundingBoxModel.keep_prob: 1.0})
     print(location)
-    cv2.rectangle(image,(int(location[0][0]),int(location[0][1])),(int(location[0][0])+int(location[0][2]),int(location[0][1])+int(location[0][3])),(0,255,0),3)
+    cv2.rectangle(image,(int(location[0][0]),int(location[0][1])),int((location[0][0]+location[0][2])*1.2),int((location[0][1]+location[0][3])*1.2),(0,255,0),3)
     cv2.imshow("image",image)
     cv2.waitKey(0)
 

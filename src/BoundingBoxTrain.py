@@ -6,8 +6,8 @@ import BoundingBoxModel
 LOGDIR = './save'
 
 L2NormConst = 0.001
-epochs = 30
-batch_size = 15
+epochs = 20
+batch_size = 100
 
 sess = tf.InteractiveSession()
 
