@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import os
 
-dataPath = '/Users/hyunminko/20bn-datasets/20bn-jester-v1'
+dataPath = '/data/20bn/20bn-jester-v1'
 xs = []
 ys = []
 nb_classes = 0
@@ -14,10 +14,10 @@ numVideoframes = 37
 train_batch_pointer = 0
 val_batch_pointer = 0
 
-labels_csv = pd.read_csv('/Users/hyunminko/git/HandGestureAuthentication/src/jester/jester-v1-labels.csv',names=('L'), index_col=False)
-train_csv = pd.read_csv('/Users/hyunminko/git/HandGestureAuthentication/src/jester/jester-v1-train.csv',sep=";",names=('dataName','labels'), index_col=False)
-valid_csv = pd.read_csv('/Users/hyunminko/git/HandGestureAuthentication/src/jester/jester-v1-validation.csv',sep=";",names=('dataName','labels'), index_col=False)
-test_csv = pd.read_csv('/Users/hyunminko/git/HandGestureAuthentication/src/jester/jester-v1-test.csv',names=('T'), index_col=False)
+labels_csv = pd.read_csv('jester/jester-v1-labels.csv',names=('L'), index_col=False)
+train_csv = pd.read_csv('jester/jester-v1-train.csv',sep=";",names=('dataName','labels'), index_col=False)
+valid_csv = pd.read_csv('jester/jester-v1-validation.csv',sep=";",names=('dataName','labels'), index_col=False)
+test_csv = pd.read_csv('jester/jester-v1-test.csv',names=('T'), index_col=False)
 
 labels ={}
 i = 0
